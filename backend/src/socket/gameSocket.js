@@ -217,7 +217,7 @@ export default function setupSocket(io) {
             username: socket.user.username,
             joinOrder: 1,
           }],
-          currentRound: { bets: [], diceResults: [], totalBetAmount: 0 },
+          currentRound: { bets: [], diceResults: [], totalBetAmount: 0, readyPlayers: [] },
         });
 
         socket.join(code);
@@ -301,7 +301,7 @@ export default function setupSocket(io) {
 
         room.status = 'betting';
         room.roundNumber += 1;
-        room.currentRound = { bets: [], diceResults: [], totalBetAmount: 0 };
+        room.currentRound = { bets: [], diceResults: [], totalBetAmount: 0, readyPlayers: [] };
         await room.save();
 
         io.to(socket.currentRoom).emit('game:bettingStarted', {
@@ -327,9 +327,14 @@ export default function setupSocket(io) {
         if (!SYMBOLS.includes(symbol)) return callback({ error: 'Biểu tượng không hợp lệ.' });
         if (!amount || amount <= 0) return callback({ error: 'Số tiền cược không hợp lệ.' });
 
+        // Tính tổng tiền người chơi đã cược trong ván này
+        const myBetsTotal = room.currentRound.bets
+          .filter(b => b.userId === socket.user.id)
+          .reduce((sum, b) => sum + b.amount, 0);
+
         // Kiểm tra số dư tay con
         const playerWallet = await prisma.wallet.findUnique({ where: { userId: socket.user.id } });
-        if (!playerWallet || playerWallet.balance < amount) {
+        if (!playerWallet || playerWallet.balance < myBetsTotal + amount) {
           return callback({ error: 'Bạn không đủ Xu.' });
         }
 
@@ -370,6 +375,74 @@ export default function setupSocket(io) {
       } catch (err) {
         console.error('[PLACE BET ERROR]', err);
         callback({ error: 'Lỗi đặt cược.' });
+      }
+    });
+
+    // =============================================
+    // TAY CON: HỦY TẤT CẢ CƯỢC TRONG VÁN
+    // =============================================
+    socket.on('game:clearBets', async (callback) => {
+      try {
+        const room = await Room.findOne({ code: socket.currentRoom });
+        if (!room) return callback({ error: 'Phòng không tồn tại.' });
+        if (room.status !== 'betting') return callback({ error: 'Không thể hủy cược lúc này.' });
+        
+        const userBets = room.currentRound.bets.filter(b => b.userId === socket.user.id);
+        if (userBets.length === 0) return callback({ error: 'Bạn chưa đặt cược nào.' });
+        
+        const refundAmount = userBets.reduce((sum, b) => sum + b.amount, 0);
+        
+        // Bỏ trạng thái Xác Nhận nếu cố tình Hủy cược (tùy chọn)
+        if (room.currentRound.readyPlayers && room.currentRound.readyPlayers.includes(socket.user.id)) {
+          room.currentRound.readyPlayers = room.currentRound.readyPlayers.filter(id => id !== socket.user.id);
+        }
+
+        // Cập nhật lại list cược và tổng
+        room.currentRound.bets = room.currentRound.bets.filter(b => b.userId !== socket.user.id);
+        room.currentRound.totalBetAmount -= refundAmount;
+        await room.save();
+        
+        // Emit để UI mọi người lấy list bets mới và cập nhật
+        io.to(socket.currentRoom).emit('game:betsCleared', {
+          userId: socket.user.id,
+          clearedAmount: refundAmount,
+          totalBetAmount: room.currentRound.totalBetAmount,
+          bets: room.currentRound.bets,
+          readyPlayers: room.currentRound.readyPlayers || []
+        });
+        
+        callback({ success: true, refundAmount });
+      } catch (err) {
+        console.error('[CLEAR BETS ERROR]', err);
+        callback({ error: 'Lỗi khi hủy cược.' });
+      }
+    });
+
+    // =============================================
+    // TAY CON: BẤM XÁC NHẬN CƯỢC XONG
+    // =============================================
+    socket.on('game:playerReady', async (callback) => {
+      try {
+        const room = await Room.findOne({ code: socket.currentRoom });
+        if (!room) return callback({ error: 'Phòng không tồn tại.' });
+        if (room.status !== 'betting') return callback({ error: 'Chỉ có thể bấm xong trong vòng cược.' });
+        if (room.hostId === socket.user.id) return callback({ error: 'Nhà cái không cần thực hiện.' });
+
+        if (!room.currentRound.readyPlayers) room.currentRound.readyPlayers = [];
+
+        if (!room.currentRound.readyPlayers.includes(socket.user.id)) {
+          room.currentRound.readyPlayers.push(socket.user.id);
+          await room.save();
+          // Broadcast trạng thái mới nhất cho phòng
+          io.to(socket.currentRoom).emit('game:readyPlayersUpdate', {
+            readyPlayers: room.currentRound.readyPlayers
+          });
+        }
+
+        callback({ success: true });
+      } catch (err) {
+        console.error('[PLAYER READY ERROR]', err);
+        callback({ error: 'Lỗi hệ thống.' });
       }
     });
 
@@ -471,6 +544,7 @@ function formatRoomData(room) {
     currentRound: {
       bets: room.currentRound.bets,
       totalBetAmount: room.currentRound.totalBetAmount,
+      readyPlayers: room.currentRound.readyPlayers || [],
     },
   };
 }

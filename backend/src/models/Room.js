@@ -29,6 +29,7 @@ const roomSchema = new mongoose.Schema({
     }],
     diceResults: [String],  // Kết quả 3 xúc xắc
     totalBetAmount: { type: Number, default: 0 }, // Tổng tiền cược hiện tại
+    readyPlayers: [String], // Danh sách userId đã bấm Xác nhận cược xong
   },
   roundNumber: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },

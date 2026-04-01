@@ -148,9 +148,20 @@
   display: inline-block;
 }
 
-.status-waiting { background: rgba(16, 168, 84, 0.2); color: var(--accent-green); }
-.status-betting { background: rgba(245, 197, 24, 0.2); color: var(--accent-gold); }
-.status-rolling { background: rgba(227, 27, 35, 0.2); color: var(--accent-red); }
+.status-waiting {
+  background: rgba(16, 168, 84, 0.2);
+  color: var(--accent-green);
+}
+
+.status-betting {
+  background: rgba(245, 197, 24, 0.2);
+  color: var(--accent-gold);
+}
+
+.status-rolling {
+  background: rgba(227, 27, 35, 0.2);
+  color: var(--accent-red);
+}
 
 .empty-rooms {
   text-align: center;
@@ -161,8 +172,11 @@
 /* Modal */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -230,5 +244,12 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-.toast-success { background: var(--accent-green); color: #fff; }
-.toast-error { background: var(--accent-red); color: #fff; }
+.toast-success {
+  background: var(--accent-green);
+  color: #fff;
+}
+
+.toast-error {
+  background: var(--accent-red);
+  color: #fff;
+}

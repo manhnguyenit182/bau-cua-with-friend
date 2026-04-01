@@ -1,4 +1,9 @@
 import 'dotenv/config';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -23,14 +28,20 @@ setupSocket(io);
 app.use(cors());
 app.use(express.json());
 
-// Health check
-app.get('/', (req, res) => {
+// Health check API
+app.get('/api/health', (req, res) => {
   res.json({ message: '🎲 Bầu Cua API is running!' });
 });
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/wallet', walletRoutes);
+
+// Phục vụ giao diện Frontend (Hữu ích khi dùng Ngrok hoặc Deploy)
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
 
 // Connect MongoDB và khởi động server
 const PORT = process.env.PORT || 5000;
