@@ -6,14 +6,18 @@ import { Server } from 'socket.io';
 import authRoutes from './routes/auth.js';
 import walletRoutes from './routes/wallet.js';
 import connectMongo from './config/mongo.js';
+import setupSocket from './socket/gameSocket.js';
 
 const app = express();
 const httpServer = http.createServer(app);
 
-// Socket.io setup (sẽ mở rộng ở Phase 3)
+// Socket.io setup
 export const io = new Server(httpServer, {
   cors: { origin: '*' },
 });
+
+// Gắn game engine vào Socket
+setupSocket(io);
 
 // Middleware
 app.use(cors());
