@@ -585,7 +585,7 @@ async function handlePlayerLeave(socket, io) {
       // Reset ván nếu đang giữa chừng
       if (room.status === 'betting' || room.status === 'rolling') {
         room.status = 'waiting';
-        room.currentRound = { bets: [], diceResults: [], totalBetAmount: 0 };
+        room.currentRound = { bets: [], diceResults: [], totalBetAmount: 0, readyPlayers: [] };
       }
 
       io.to(code).emit('room:hostChanged', {
