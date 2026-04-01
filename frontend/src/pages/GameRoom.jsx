@@ -4,12 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { getSocket, connectSocket } from '../services/socket';
 import './GameRoom.css';
 const SYMBOL_MAP = {
-  nai: { icon: '🦌', name: 'Nai' },
-  bau: { icon: '🍐', name: 'Bầu' },
-  ga: { icon: '🐓', name: 'Gà' },
-  ca: { icon: '🐟', name: 'Cá' },
-  cua: { icon: '🦀', name: 'Cua' },
-  tom: { icon: '🦐', name: 'Tôm' },
+  nai: { icon: '/assets/icon_nai.png', name: 'Nai' },
+  bau: { icon: '/assets/icon_bau.png', name: 'Bầu' },
+  ga: { icon: '/assets/icon_ga.png', name: 'Gà' },
+  ca: { icon: '/assets/icon_ca.png', name: 'Cá' },
+  cua: { icon: '/assets/icon_cua.png', name: 'Cua' },
+  tom: { icon: '/assets/icon_tom.png', name: 'Tôm' },
 };
 const CHIP_VALUES = [50, 100, 200, 500, 1000];
 const GameRoom = () => {
@@ -26,6 +26,8 @@ const GameRoom = () => {
   const [isRolling, setIsRolling] = useState(false);
   const [showResult, setShowResult] = useState(null);
   const [error, setError] = useState('');
+  const [showChat, setShowChat] = useState(true);
+  const [selectedBetSymbol, setSelectedBetSymbol] = useState(null);
   const chatEndRef = useRef(null);
   const isHost = room?.hostId === user?.id;
   const canBet = room?.status === 'betting' && !isHost;
@@ -53,7 +55,7 @@ const GameRoom = () => {
     socket.on('room:hostChanged', ({ newHostId, newHostName, players }) => {
       setRoom((prev) => (prev ? { ...prev, hostId: newHostId, hostName: newHostName, players } : prev));
     });
-    socket.on('room:playerKicked', ({ userId, username, reason }) => {
+    socket.on('room:playerKicked', ({ userId, reason }) => {
       if (userId === user?.id) {
         alert(`Bạn bị mời ra khỏi phòng: ${reason}`);
         navigate('/');
@@ -79,7 +81,7 @@ const GameRoom = () => {
       setRoom((prev) => (prev ? { ...prev, status: 'rolling' } : prev));
       setIsRolling(true);
     });
-    socket.on('game:roundResult', ({ diceResults: dice, settlements, hostNetChange, balanceMap, roundNumber }) => {
+    socket.on('game:roundResult', ({ diceResults: dice, settlements, hostNetChange, balanceMap }) => {
       setIsRolling(false);
       setDiceResults(dice);
       setRoom((prev) => (prev ? { ...prev, status: 'result' } : prev));
@@ -109,7 +111,7 @@ const GameRoom = () => {
     });
     socket.on(
       'game:betsCleared',
-      ({ userId, clearedAmount, totalBetAmount, bets, readyPlayers: updatedReadyPlayers }) => {
+      ({ userId, totalBetAmount, bets, readyPlayers: updatedReadyPlayers }) => {
         setRoom((prev) => {
           if (!prev) return prev;
           return { ...prev, currentRound: { ...prev.currentRound, bets, totalBetAmount } };
@@ -137,7 +139,25 @@ const GameRoom = () => {
       socket.off('game:betsCleared');
       socket.off('game:readyPlayersUpdate');
     };
-  }, [code]);
+  }, [code, navigate, setUser, user?.id]);
+  // Particle generator for wins
+  const [winParticlesConfig, setWinParticlesConfig] = useState([]);
+  useEffect(() => {
+    if (showResult?.type !== 'win') {
+      setWinParticlesConfig([]);
+      return;
+    }
+    setWinParticlesConfig(Array.from({ length: 40 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      animationDuration: `${1 + Math.random() * 2}s`,
+      animationDelay: `${Math.random() * 0.5}s`,
+      background: `hsl(${Math.random() * 360}, 100%, 60%)`,
+      width: `${4 + Math.random() * 6}px`,
+      height: `${8 + Math.random() * 12}px`,
+      borderRadius: '2px'
+    })));
+  }, [showResult?.type]);
+
   // Auto scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -156,6 +176,15 @@ const GameRoom = () => {
       }));
     });
   };
+
+  const handleCellClick = (key) => {
+    if (canBet) {
+      handlePlaceBet(key);
+    } else if (isHost) {
+      setSelectedBetSymbol(selectedBetSymbol === key ? null : key);
+    }
+  };
+
   const handleClearBets = () => {
     if (!canBet) return;
     const socket = getSocket();
@@ -203,6 +232,7 @@ const GameRoom = () => {
       betTotals[bet.symbol] = (betTotals[bet.symbol] || 0) + bet.amount;
     }
   }
+  const numTayCon = room?.players?.length ? room.players.length - 1 : 0;
   if (error) {
     return (
       <div className="game-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -231,7 +261,12 @@ const GameRoom = () => {
       {/* HEADER */}
       <div className="game-header glass">
         <div className="game-room-info">
-          <h3>Bàn {room.code}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3>Bàn {room.code}</h3>
+            {room.status === 'betting' && numTayCon > 0 && (
+              <span className="ready-counter animate-fade-in">Đã xong: {readyPlayers.length}/{numTayCon}</span>
+            )}
+          </div>
           <p>
             Ván #{room.roundNumber} · Min {room.minBet} Xu
           </p>
@@ -275,7 +310,7 @@ const GameRoom = () => {
           ) : diceResults.length > 0 ? (
             diceResults.map((d, i) => (
               <div key={i} className="dice">
-                {SYMBOL_MAP[d]?.icon || '?'}
+                {SYMBOL_MAP[d] ? <img src={SYMBOL_MAP[d].icon} alt={d} className="dice-image" /> : '?'}
               </div>
             ))
           ) : (
@@ -297,15 +332,39 @@ const GameRoom = () => {
           {Object.entries(SYMBOL_MAP).map(([key, { icon, name }]) => (
             <div
               key={key}
-              className={`bet-cell glass ${!canBet ? 'disabled' : ''} ${myBets[key] ? 'has-my-bet' : ''}`}
-              onClick={() => handlePlaceBet(key)}
+              className={`bet-cell glass ${!canBet && !isHost ? 'disabled' : ''} ${myBets[key] ? 'has-my-bet' : ''}`}
+              onClick={() => handleCellClick(key)}
             >
               {betTotals[key] > 0 && <span className="bet-total">{betTotals[key]}</span>}
               <div className="symbol-icon-wrapper">
-                <span className="symbol-icon">{icon}</span>
+                <img src={icon} alt={name} className="symbol-image" />
               </div>
               <span className="symbol-name">{name}</span>
               {myBets[key] > 0 && <div className="my-bet-badge">+{myBets[key]}</div>}
+              
+              {/* Host Bet Details Popup */}
+              {isHost && selectedBetSymbol === key && betTotals[key] > 0 && (
+                <div className="host-bet-details animate-fade-in" onClick={(e) => { e.stopPropagation(); setSelectedBetSymbol(null); }}>
+                  <div className="host-bet-details-header">Chi tiết: {name}</div>
+                  <div className="host-bet-details-list">
+                    {room.currentRound.bets
+                      .filter(b => b.symbol === key)
+                      .reduce((acc, curr) => {
+                        const existing = acc.find(item => item.userId === curr.userId);
+                        if (existing) existing.amount += curr.amount;
+                        else acc.push({ ...curr });
+                        return acc;
+                      }, [])
+                      .map((b, idx) => (
+                        <div key={idx} className="host-bet-detail-item">
+                          <span>{b.username}</span>
+                          <span className="text-gold">{b.amount}</span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -359,9 +418,14 @@ const GameRoom = () => {
             )}
           </div>
         )}
+        {/* CHAT TOGGLE FOR MOBILE */}
+        <button className="chat-toggle-btn glass" onClick={() => setShowChat(!showChat)}>
+          {showChat ? '👇 Ẩn Chat' : '💬 Hiện Chat'}
+        </button>
         {/* CHAT */}
-        <div className="chat-section glass">
-          <div className="chat-messages">
+        {showChat && (
+          <div className="chat-section glass animate-fade-in">
+            <div className="chat-messages">
             {chatMessages.map((msg, i) => (
               <div key={i} className={`chat-msg ${msg.userId === 'system' ? 'system-msg' : ''}`}>
                 <span className="chat-author">{msg.username}:</span>
@@ -381,16 +445,24 @@ const GameRoom = () => {
             <button type="submit">Gửi</button>
           </form>
         </div>
+        )}
       </div>
       {/* RESULT OVERLAY */}
       {showResult && (
         <div className="result-overlay" onClick={() => setShowResult(null)}>
+          {showResult.type === 'win' && (
+            <div className="particles-bg">
+              {winParticlesConfig.map((style, i) => (
+                <div key={i} className="particle" style={style} />
+              ))}
+            </div>
+          )}
           <div className="result-card glass" onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ color: 'var(--accent-gold)' }}>Ván #{room.roundNumber}</h2>
+            <h2 className="text-gold" style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Ván #{room.roundNumber}</h2>
             <div className="result-dice-row">
               {showResult.dice.map((d, i) => (
                 <div key={i} className="result-dice">
-                  {SYMBOL_MAP[d]?.icon}
+                  {SYMBOL_MAP[d] && <img src={SYMBOL_MAP[d].icon} alt={d} className="result-dice-image" />}
                 </div>
               ))}
             </div>
