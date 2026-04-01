@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Lobby from './pages/Lobby';
+import GameRoom from './pages/GameRoom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Hiển thị Splash Auth
@@ -18,6 +19,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Lobby />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/room/:code" 
+        element={
+          <ProtectedRoute>
+            <GameRoom />
           </ProtectedRoute>
         } 
       />
