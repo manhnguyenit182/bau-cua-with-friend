@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -34,8 +34,24 @@ const Register = () => {
     }
   };
 
+  const [particlesConfig, setParticlesConfig] = useState([]);
+  useEffect(() => {
+    setParticlesConfig(Array.from({ length: 15 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      animationDuration: `${5 + Math.random() * 10}s`,
+      animationDelay: `${Math.random() * 5}s`,
+      width: `${5 + Math.random() * 15}px`,
+      height: `${5 + Math.random() * 15}px`,
+    })));
+  }, []);
+
   return (
     <div className="auth-container">
+      <div className="particles-bg">
+        {particlesConfig.map((style, i) => (
+          <div key={i} className="particle" style={style} />
+        ))}
+      </div>
       <div className="auth-card glass animate-fade-in">
         <div className="auth-header">
           <div className="auth-logo">💎</div>
@@ -71,7 +87,7 @@ const Register = () => {
             />
           </div>
 
-          <button type="submit" className="casino-btn" disabled={loading}>
+          <button type="submit" className="casino-btn shimmer-bg" disabled={loading}>
             {loading ? 'ĐANG XUẤT THẺ...' : 'MỞ TÀI KHOẢN'}
           </button>
         </form>

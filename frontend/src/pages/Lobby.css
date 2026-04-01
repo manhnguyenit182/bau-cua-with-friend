@@ -71,12 +71,15 @@
   border-radius: var(--radius-md);
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(145deg, rgba(27, 36, 52, 0.8), rgba(18, 25, 38, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .action-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(245, 197, 24, 0.2);
+  border-color: rgba(245, 197, 24, 0.3);
 }
 
 .action-card .icon {
@@ -111,15 +114,33 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-radius: var(--radius-md);
+  padding: 1.2rem;
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  background: linear-gradient(to right, rgba(27, 36, 52, 0.9), rgba(18, 25, 38, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.room-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 4px; height: 100%;
+  background: var(--accent-gold);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.room-item:hover::before {
+  opacity: 1;
 }
 
 .room-item:hover {
-  border-color: var(--accent-gold);
-  box-shadow: 0 0 10px rgba(245, 197, 24, 0.15);
+  transform: translateX(5px);
+  border-color: rgba(245, 197, 24, 0.2);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .room-info h4 {
@@ -241,7 +262,8 @@
   border-radius: var(--radius-md);
   font-size: 0.9rem;
   z-index: 150;
-  animation: fadeIn 0.3s ease-out;
+  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
 .toast-success {
