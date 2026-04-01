@@ -53,7 +53,7 @@ router.post('/register', async (req, res) => {
     return res.status(201).json({
       message: `Chào mừng ${user.username}! Bạn đã nhận được ${INITIAL_BALANCE} điểm khởi điểm.`,
       token,
-      user: { id: user.id, username: user.username },
+      user: { id: user.id, username: user.username, balance: INITIAL_BALANCE },
     });
   } catch (err) {
     console.error('[REGISTER ERROR]', err);
