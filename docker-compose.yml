@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Database 1: PostgreSQL (Dùng cho Prisma)
+  postgres:
+    image: postgres:16-alpine
+    container_name: baucua-db-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user_baucua}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass_baucua}
+      POSTGRES_DB: ${POSTGRES_DB:-db_baucua}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Database 2: MongoDB (Dùng cho Mongoose)
+  mongodb:
+    image: mongo:7.0
+    container_name: baucua-db-mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-adminpass}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  # Backend App
+  backend:
+    build: ./backend
+    container_name: baucua-backend
+    restart: always
+    environment:
+      PORT: 5000
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-user_baucua}:${POSTGRES_PASSWORD:-pass_baucua}@postgres:5432/${POSTGRES_DB:-db_baucua}?schema=public"
+      MONGODB_URI: "mongodb://${MONGO_USER:-admin}:${MONGO_PASS:-adminpass}@mongodb:27017/baucua?authSource=admin"
+      JWT_SECRET: ${JWT_SECRET:-secret_key_change_me}
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - mongodb
+    ports:
+      - "5000:5000"
+
+  # Frontend App (Nginx phục vụ file tĩnh và Proxy)
+  frontend:
+    build: ./frontend
+    container_name: baucua-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  mongo_data:
