@@ -5,34 +5,39 @@ import Register from './pages/Register';
 import Lobby from './pages/Lobby';
 import GameRoom from './pages/GameRoom';
 import ProtectedRoute from './components/ProtectedRoute';
+import OllamaChat from './components/OllamaChat';
 
 // Hiển thị Splash Auth
 function AppRoutes() {
   const { user } = useAuth();
 
   return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
-      <Route 
-        path="/" 
-        element={
-          <ProtectedRoute>
-            <Lobby />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/room/:code" 
-        element={
-          <ProtectedRoute>
-            <GameRoom />
-          </ProtectedRoute>
-        } 
-      />
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <Lobby />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/room/:code" 
+          element={
+            <ProtectedRoute>
+              <GameRoom />
+            </ProtectedRoute>
+          } 
+        />
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+      {/* Nút AI Chat nổi toàn cục — chỉ hiện khi user đã cài Ollama URL */}
+      {user && <OllamaChat />}
+    </>
   );
 }
 

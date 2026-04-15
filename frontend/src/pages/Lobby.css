@@ -58,6 +58,17 @@
   border: 1px solid var(--accent-red);
 }
 
+.btn-settings {
+  background: rgba(124, 58, 237, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  transition: background 0.2s;
+}
+
+.btn-settings:hover {
+  background: rgba(124, 58, 237, 0.3);
+}
+
 /* Create/Join Section */
 .lobby-actions {
   display: grid;

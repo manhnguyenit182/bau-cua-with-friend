@@ -11,10 +11,14 @@ const Lobby = () => {
   const [rooms, setRooms] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [minBet, setMinBet] = useState(100);
   const [toast, setToast] = useState(null);
+  // Ollama Settings
+  const [ollamaUrl, setOllamaUrl] = useState(() => localStorage.getItem('ollama_url') || '');
+  const [ollamaModel, setOllamaModel] = useState(() => localStorage.getItem('ollama_model') || 'llama3');
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -75,6 +79,15 @@ const Lobby = () => {
     navigate('/login');
   };
 
+  const handleSaveSettings = () => {
+    localStorage.setItem('ollama_url', ollamaUrl.trim());
+    localStorage.setItem('ollama_model', ollamaModel.trim() || 'llama3');
+    // Thông báo cho OllamaChat biết cài đặt đã thay đổi
+    window.dispatchEvent(new Event('ollama-settings-changed'));
+    setShowSettingsModal(false);
+    showToast(ollamaUrl.trim() ? '🤖 Đã lưu cài đặt AI!' : '⚙️ Đã xoá cài đặt AI.');
+  };
+
   const statusLabel = { waiting: 'Chờ', betting: 'Đang cược', rolling: 'Đang lắc', result: 'Kết quả' };
 
   return (
@@ -89,6 +102,7 @@ const Lobby = () => {
           <div className="balance-amount">💰 {(user?.balance || 0).toLocaleString()} Xu</div>
           <div className="lobby-actions-row">
             <button className="btn-sm btn-checkin" onClick={handleCheckin}>📅 Điểm danh</button>
+            <button className="btn-sm btn-settings" onClick={() => setShowSettingsModal(true)} title="Cài đặt AI">⚙️</button>
             <button className="btn-sm btn-logout" onClick={handleLogout}>Thoát</button>
           </div>
         </div>
@@ -180,6 +194,47 @@ const Lobby = () => {
             <div className="modal-actions">
               <button className="btn-cancel" onClick={() => setShowJoinModal(false)}>Hủy</button>
               <button className="btn-confirm" onClick={handleJoinByCode}>Vào Phòng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CÀI ĐẶT OLLAMA */}
+      {showSettingsModal && (
+        <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
+          <div className="modal-content glass" onClick={(e) => e.stopPropagation()}>
+            <h3>⚙️ Cài Đặt Trợ Lý AI</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', textAlign: 'center' }}>
+              Nhập địa chỉ Ollama đang chạy trên máy tính của bạn.<br/>
+              Nếu để trống, nút Chat AI sẽ bị ẩn đi.
+            </p>
+            <div className="input-group">
+              <label>🌐 Ollama URL</label>
+              <input
+                type="text"
+                className="casino-input"
+                placeholder="http://localhost:11434"
+                value={ollamaUrl}
+                onChange={(e) => setOllamaUrl(e.target.value)}
+              />
+            </div>
+            <div className="input-group" style={{ marginTop: '0.75rem' }}>
+              <label>🤖 Tên Model</label>
+              <input
+                type="text"
+                className="casino-input"
+                placeholder="llama3, qwen2.5, gemma3..."
+                value={ollamaModel}
+                onChange={(e) => setOllamaModel(e.target.value)}
+              />
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', padding: '0.6rem', background: 'rgba(124,58,237,0.08)', borderRadius: '8px', border: '1px solid rgba(124,58,237,0.2)' }}>
+              ⚠️ Để Ollama hoạt động từ Web, bạn cần khởi động với:<br/>
+              <code style={{ color: '#a78bfa', fontSize: '0.8rem' }}>OLLAMA_ORIGINS="*" ollama serve</code>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setShowSettingsModal(false)}>Hủy</button>
+              <button className="btn-confirm" onClick={handleSaveSettings}>💾 Lưu</button>
             </div>
           </div>
         </div>
